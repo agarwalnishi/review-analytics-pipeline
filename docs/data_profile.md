@@ -151,10 +151,38 @@ Generated 2026-11-14 20:33 by `etl/explore.py` on `data\downloads\amazon_reviews
 
 ## Decisions for Day 2
 
-Fill this in after reading the tables above:
+- **Duplicates:** 29,933 extra rows (1.06%) across 25,282 groups share the
+  same user, product and timestamp. Keep one row per group (highest helpful
+  votes wins) and send the rest to `rejected/` with reason `duplicate`.
+  Expected clean count: 2,830,133 - 29,933 = 2,800,200 reviews.
+- **Empty text:** 2,785 reviews. Keep them (the rating is still valid), add a
+  `has_text` flag, and exclude them from text-length analysis.
+- **Orphan reviews:** none found. Keep the check as a quality rule anyway, so a
+  future source with orphans gets caught instead of silently dropped in joins.
+- **Price:** no junk strings, only real numbers or missing values. Coverage is
+  low (15.7% Beauty, 49.5% Appliances), so keep missing prices as NULL. Flag
+  prices under $1 as suspect instead of deleting them. Price analysis will
+  focus on Appliances.
+- **Brand:** use `details.Brand`, falling back to `store`. This raises coverage
+  from 42-64% to 90-99%.
+- **Time range:** keep all years. Trend analysis uses 2010 onward (2000-2009
+  are too sparse), and 2023 is flagged as partial (data ends September).
+- **Ratings:** 67% are 5 stars and 12% are 1 star. Track % negative (1-2 stars)
+  alongside average rating, since averages hide this J-shape.
+- **Helpful votes:** 79% of reviews have zero votes, max is 5,704. Use
+  percentiles and NTILE, not averages.
+- **Analysis plan change:** users average ~1.1 reviews each, so user-level
+  cohort retention is replaced with product-level review retention.
 
-- Duplicates: 
-- Orphan reviews: 
-- Price parsing: 
-- Brand source (details.Brand vs store): 
-- Other: 
+## Key Finding
+
+Unverified reviewers behave differently by category:
+
+| Category | Verified avg | Unverified avg | Gap |
+|---|---|---|---|
+| Appliances | 4.25 | 3.53 | -0.72 |
+| All_Beauty | 3.95 | 4.08 | +0.13 |
+
+In Appliances, unverified reviewers are much harsher. In Beauty they are
+more positive than verified buyers, which is consistent with incentivized
+positive reviews. Worth investigating in the analytics queries.
