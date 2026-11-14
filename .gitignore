@@ -1,0 +1,21 @@
+# data (full files are GBs; only the small sample is committed)
+data/downloads/
+data/lake/
+*.part
+*.parquet
+*.duckdb
+*.duckdb.wal
+
+# secrets
+.env
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# os / editors
+.DS_Store
+.vscode/
+.idea/
